@@ -47,7 +47,7 @@ export PATH=$HOME/.toolbox/bin:$PATH
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
-eval $(dircolors ~/dotfiles/Dracula.dircolors)
+eval $(dircolors ~/.config/Dracula.dircolors)
 
 # ----- PATH -----
 # export PATH=~/scripts:$PATH
