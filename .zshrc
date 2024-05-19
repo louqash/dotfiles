@@ -7,7 +7,8 @@ alias gti="git"
 alias ..="cd .."
 
 # ----- SSH-AGENT -----
-SSH_ENV="$HOME/.ssh/environment"
+ssh_dir="$HOME/.ssh"
+SSH_ENV="$ssh_dir/environment"
 
 start_agent() {
     echo "Initialising new SSH agent..."
@@ -19,9 +20,10 @@ start_agent() {
     # ssh-add <ssh key path>
 }
 
-ssh_keys=("$HOME/.ssh/*")
-# If there are any ssh keys in ~/.ssh
-if [ ${#ssh_keys[@]} -gt 0 ]; then
+# Check for files in the .ssh directory excluding authorized_hosts and known_hosts
+files=$(find "$ssh_dir" -type f ! -name "authorized_keys" ! -name "known_hosts" ! -name "environment")
+
+if [ -n "$files" ]; then
   if [ $(find ${SSH_ENV} -mmin -360) ]; then
       . "${SSH_ENV}" > /dev/null
       (ps -ef | grep "${SSH_AGENT_PID}[^\[]" &> /dev/null) || start_agent;
@@ -44,7 +46,7 @@ git_branch() {
 }
 
 setopt PROMPT_SUBST
-PS1="%F{red}%{%Gλ%}%(?.%F{green}.%F{red})\$(git_branch) %(?.%F{blue}.%F{red})%B%~%b %#%f "
+PS1="%F{red}%{%Gλ%} %(?.%F{blue}.%F{red})@%m%(?.%F{green}.%F{red})\$(git_branch) %(?.%F{blue}.%F{red})%B%~%b %#%f "
 
 autoload -Uz compinit && compinit
 export PATH=$HOME/.toolbox/bin:$PATH
