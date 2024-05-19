@@ -19,17 +19,21 @@ start_agent() {
     # ssh-add <ssh key path>
 }
 
-if [ $(find ${SSH_ENV} -mmin -360) ]; then
-    . "${SSH_ENV}" > /dev/null
-    (ps -ef | grep "${SSH_AGENT_PID}[^\[]" &> /dev/null) || start_agent;
-else
-    pkill ssh-agent;
-    start_agent;
+ssh_keys=("$HOME/.ssh/*")
+# If there are any ssh keys in ~/.ssh
+if [ ${#ssh_keys[@]} -gt 0 ]; then
+  if [ $(find ${SSH_ENV} -mmin -360) ]; then
+      . "${SSH_ENV}" > /dev/null
+      (ps -ef | grep "${SSH_AGENT_PID}[^\[]" &> /dev/null) || start_agent;
+  else
+      pkill ssh-agent;
+      start_agent;
+  fi
 fi
 
 # ----- EXPORTS -----
 export EDITOR="vim"
-bindkey -e
+bindkey -v
 export TERM="xterm-256color"
 export CLICOLOR=1
 
