@@ -1,5 +1,5 @@
 vim.g.mapleader = " "
-vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
+vim.keymap.set("n", "<leader>pv", vim.cmd.Vex)
 
 -- move lines up or down and autoindent
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
@@ -13,3 +13,7 @@ vim.keymap.set("n", "<C-d>", "<C-d>zz")
 vim.keymap.set("x", "<leader>p", "\"_dP")
 
 vim.keymap.set("n", "<leader>y", "\"+y")
+
+vim.keymap.set({ 'n', 'v' }, '<leader>pc', ':GpChatNew popup<CR>')
+vim.keymap.set({ 'n', 'v' }, '<leader>pr', ':GpRewrite<CR>')
+vim.keymap.set({ 'n', 'v' }, '<leader>pa', ':GpAppend<CR>')
