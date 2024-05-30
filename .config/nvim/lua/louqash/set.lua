@@ -1,3 +1,4 @@
+vim.api.nvim_exec ('language en_US', true)
 vim.opt.guicursor = ""
 
 vim.opt.number = true
