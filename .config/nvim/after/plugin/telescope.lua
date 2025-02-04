@@ -8,6 +8,7 @@ end)
 
 require("telescope").setup { 
     pickers = {
+        current_buffer_fuzzy_find = { sorting_strategy = 'ascending' },
         find_files = {
             find_command = {
                 'rg',
