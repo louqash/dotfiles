@@ -19,7 +19,6 @@ require("lazy").setup({
   { 'rose-pine/neovim', as = 'rose-pine'},
   {{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}},
   'mbbill/undotree',
-  'tpope/vim-fugitive',
   {'williamboman/mason.nvim'},
   {'williamboman/mason-lspconfig.nvim'},
 
@@ -27,5 +26,15 @@ require("lazy").setup({
   {'neovim/nvim-lspconfig'},
   {'hrsh7th/cmp-nvim-lsp'},
   {'hrsh7th/nvim-cmp'},
-  {'L3MON4D3/LuaSnip'}
+  {'L3MON4D3/LuaSnip'},
+  {
+    "kylechui/nvim-surround",
+    version = "*", -- Use for stability; omit to use `main` branch for the latest features
+    event = "VeryLazy",
+    config = function()
+        require("nvim-surround").setup({
+            -- Configuration here, or leave empty to use defaults
+        })
+    end
+}
 })
