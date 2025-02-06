@@ -16,7 +16,6 @@ require("lazy").setup({
     'nvim-telescope/telescope.nvim', tag = '0.1.6',
     dependencies = { 'nvim-lua/plenary.nvim' }
   },
-  { 'rose-pine/neovim', as = 'rose-pine'},
   {{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}},
   'mbbill/undotree',
   {'williamboman/mason.nvim'},
@@ -26,7 +25,6 @@ require("lazy").setup({
   {'neovim/nvim-lspconfig'},
   {'hrsh7th/cmp-nvim-lsp'},
   {'hrsh7th/nvim-cmp'},
-  {'L3MON4D3/LuaSnip'},
   {
     "kylechui/nvim-surround",
     version = "*", -- Use for stability; omit to use `main` branch for the latest features
