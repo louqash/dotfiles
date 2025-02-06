@@ -15,17 +15,52 @@ lsp_zero.on_attach(function(client, bufnr)
   vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end, opts)
 end)
 
+local python_utils = require('louqash.python_util')
+
 require('mason').setup({})
 require('mason-lspconfig').setup({
-  ensure_installed = {'rust_analyzer'},
   handlers = {
     lsp_zero.default_setup,
-    lua_ls = function()
-      local lua_opts = lsp_zero.nvim_lua_ls()
-      require('lspconfig').lua_ls.setup(lua_opts)
+    pylsp = function()
+        require('lspconfig').pylsp.setup({
+            on_init = function(client)
+                if python_utils.is_poetry_installed() then
+                    local poetry_env = python_utils.get_poetry_project_path()
+                    if poetry_env then
+                        client.config.settings.pylsp.plugins.jedi.environment = poetry_env
+                        local pylint_args = string.format("--init-hook='import sys; sys.path.append(\"%s\")'", python_utils.get_poetry_site_packages())
+                        table.insert(client.config.settings.pylsp.plugins.pylint.args, pylint_args)
+                        client.notify("workspace/didChangeConfiguration", { settings = client.config.settings })
+                        return true
+                    end
+                end
+            end,
+            settings = {
+                pylsp = {
+                    plugins = {
+                        pycodestyle = { enabled = false },
+                        flake8 = { enabled = false, maxLineLength = 120 },
+                        pyflakes = { enabled = false, maxLineLength = 120 },
+                        ruff = { enabled = true },
+                        mccabe = { enabled = false },
+                        pylint = { enabled = false, args = {}},
+                        jedi_signature_help = { enabled = true },
+                        jedi_completion = {
+                            include_params = true,
+                            fuzzy = true,
+                        },
+                        jedi = {
+                            extra_paths = {
+                            },
+                        },
+                    },
+                },
+            }
+        })
     end,
   }
 })
+
 
 local cmp = require('cmp')
 local cmp_select = {behavior = cmp.SelectBehavior.Select}
