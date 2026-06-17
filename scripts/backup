@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Check if destination argument is provided
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <destination_drive>"
+    exit 1
+fi
+
+DEST_DRIVE="$1"
+DEST_PATH="$DEST_DRIVE/Backup"
+LOGS_DIR="$DEST_PATH/logs"
+MAIN_LOG_FILE="$LOGS_DIR/backup.log"
+
+# List of directories to backup
+BACKUP_DIRS=(
+    "$HOME/Documents/Second Brain"
+    "$HOME/Google Drive/My Drive"
+    "$HOME/workplace"
+    "$HOME/Calibre Library"
+    "$HOME/Lotne Materie"
+)
+# List of patterns to exclude
+EXCLUDE_PATTERNS=(
+    "/workplace/work/"
+    ".DS_Store"
+    ".git"
+    "node_modules"
+    ".venv"
+)
+
+# Create exclude pattern string for rsync
+EXCLUDE_STRING=""
+for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+    EXCLUDE_STRING="$EXCLUDE_STRING --exclude='$pattern'"
+done
+
+
+# Check if destination drive is mounted
+if [ ! -d "$DEST_DRIVE" ]; then
+    echo "Error: Destination drive '$DEST_DRIVE' is not mounted"
+    exit 1
+fi
+
+# Create backup and logs directories if it doesn't exist
+mkdir -p "$DEST_PATH"
+mkdir -p "$LOGS_DIR"
+
+# Check if source directories exist
+for dir in "${BACKUP_DIRS[@]}"; do
+    if [ ! -d "$dir" ]; then
+        echo "Error: Source directory '$dir' does not exist"
+        exit 1
+    fi
+done
+
+# Print last backup time
+if [ -f "$MAIN_LOG_FILE" ]; then
+    echo "Last backup was performed on:"
+    tail -n 1 "$MAIN_LOG_FILE"
+else
+    echo "No previous backup found"
+fi
+
+# Get timestamp for log files
+TIMESTAMP=$(date "+%Y%m%d_%H%M%S")
+
+# Perform backup
+echo "Starting backup to $DEST_DRIVE..."
+for dir in "${BACKUP_DIRS[@]}"; do
+    dir_name=$(basename "$dir")
+    echo "Backing up $dir_name..."
+
+    RSYNC_LOG="$LOGS_DIR/${dir_name}_${TIMESTAMP}.log"
+    
+    eval rsync -av --delete --progress $EXCLUDE_STRING \"$dir\" \"$DEST_PATH/\" 2>&1 | tee "$RSYNC_LOG"|| {
+        echo "Error: Failed to backup $dir_name"
+        echo "Error: Backup of $dir_name failed at $TIMESTAMP" >> "$MAIN_LOG_FILE"
+    }
+done
+
+# Log successful backup
+echo "Backup completed successfully at $TIMESTAMP" >> "$MAIN_LOG_FILE"
+ 
+echo "Backup completed successfully"
+echo "Backup log updated at $MAIN_LOG_FILE"
+

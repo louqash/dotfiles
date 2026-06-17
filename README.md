@@ -1,27 +1,38 @@
-# Linux Dotfiles
+# dotfiles
 
-## Requirements
-This repo contains dotfiles for:
-```
-zsh vim tmux
-```
+Personal dotfiles for macOS and Linux.
 
-- Vim requires [vim-plug](https://github.com/junegunn/vim-plug) installed
+## Quick start
+
 ```bash
-curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
-    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+git clone <repo-url> ~/workplace/dotfiles
+cd ~/workplace/dotfiles
+./setup.sh
 ```
 
-- Tmux requires [tmux-yank](https://github.com/tmux-plugins/tmux-yank) installed:
-```bash
-mkdir .tmux && git clone https://github.com/tmux-plugins/tmux-yank ~/.tmux/yank
-```
+This will:
+- Install packages (Homebrew on macOS, apt on Linux)
+- Install Rust via rustup
+- Symlink all config files into place
+- Install Tmux Plugin Manager + plugins
+- Apply macOS system defaults (macOS only)
 
+After setup, open a new terminal. In tmux, press `` ` + I `` to install plugins.
 
-## Instructions
-```bash
-cd && git clone https://github.com/srokadev/dotfiles
-[ -d ~/.config ] || mkdir ~/.config
-rsync -abiP --suffix .old --exclude '.git' ~/dotfiles/ ~
-rm -rf dotfiles
-```
+## What's included
+
+| Config | Location | Description |
+|--------|----------|-------------|
+| zshrc | `~/.zshrc` | Zsh with pure prompt, fzf, pyenv, nvm, direnv |
+| nvim | `~/.config/nvim` | Neovim with LSP, telescope, treesitter, catppuccin |
+| alacritty | `~/.config/alacritty` | GPU terminal, JetBrains Mono, catppuccin |
+| tmux | `~/.config/tmux` | Catppuccin theme via TPM, backtick prefix |
+| karabiner | `~/.config/karabiner` | Caps Lock → Escape (macOS) |
+
+## Adding/removing packages
+
+Edit `Brewfile` and run `brew bundle --file=Brewfile`.
+
+## Re-running
+
+`./setup.sh` is idempotent — safe to run again after changes.

@@ -1,0 +1,129 @@
+# ----- ALIASES -----
+alias ll="ls -alF"
+alias la="ls -A"
+alias l="ls -CF"
+alias gti="git"
+alias ..="cd .."
+alias vim="nvim"
+alias vi="nvim"
+
+# ----- SSH-AGENT -----
+SSH_ENV="$HOME/.ssh/environment"
+
+start_agent() {
+    echo "Initialising new SSH agent..."
+    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
+    echo succeeded
+    chmod 600 "${SSH_ENV}"
+    . "${SSH_ENV}" > /dev/null
+}
+
+# Only start agent if environment file doesn't exist or agent isn't running
+if [[ -f "${SSH_ENV}" ]]; then
+    . "${SSH_ENV}" > /dev/null
+    # Check if the agent is still running
+    if ! kill -0 "${SSH_AGENT_PID}" 2>/dev/null; then
+        start_agent
+    fi
+else
+    start_agent
+fi
+
+# ----- HISTORY FIX -----
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=10000000
+SAVEHIST=10000000
+setopt BANG_HIST                 # Treat the '!' character specially during expansion.
+setopt EXTENDED_HISTORY          # Write the history file in the ":start:elapsed;command" format.
+setopt INC_APPEND_HISTORY        # Write to the history file immediately, not when the shell exits.
+setopt SHARE_HISTORY             # Share history between all sessions.
+setopt HIST_EXPIRE_DUPS_FIRST    # Expire duplicate entries first when trimming history.
+setopt HIST_IGNORE_DUPS          # Don't record an entry that was just recorded again.
+setopt HIST_IGNORE_ALL_DUPS      # Delete old recorded entry if new entry is a duplicate.
+setopt HIST_FIND_NO_DUPS         # Do not display a line previously found.
+setopt HIST_IGNORE_SPACE         # Don't record an entry starting with a space.
+setopt HIST_SAVE_NO_DUPS         # Don't write duplicate entries in the history file.
+setopt HIST_REDUCE_BLANKS        # Remove superfluous blanks before recording entry.
+setopt HIST_VERIFY               # Don't execute immediately upon history expansion.
+unsetopt BEEP                    # Disable terminal bell.
+setopt HIST_BEEP                 # Beep when accessing nonexistent history.
+
+# ----- EXPORTS -----
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+export EDITOR="vim"
+export TERM="xterm-256color"
+export CLICOLOR=1
+export AWS_DEFAULT_PROFILE=dev-sandbox-0-engineer
+
+bindkey -v
+bindkey "^R" history-incremental-search-backward
+bindkey "^I" expand-or-complete
+
+# Set PATH, MANPATH, etc., for Homebrew.
+eval "$(/opt/homebrew/bin/brew shellenv)"
+export PATH="$(brew --prefix make)/libexec/gnubin:$PATH"
+export PATH="/opt/homebrew/opt/helm@3/bin:$PATH"
+export PATH="/opt/homebrew/opt/binutils/bin:$PATH"
+export PATH="$PATH:$HOME/.local/bin"
+export PATH="$PATH:$HOME/scripts"
+export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+export PATH="$(brew --prefix)/share/google-cloud-sdk/bin:$PATH"
+export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"
+export PATH="$HOME/.opencode/bin:$PATH"
+
+# Cache brew prefix to avoid repeated calls
+HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-/opt/homebrew}"
+
+# Set up all fpath entries before compinit
+fpath+=~/.zfunc
+fpath+=("$HOMEBREW_PREFIX/share/zsh/site-functions")
+
+# Cache compinit - only regenerate dump file once per day
+autoload -Uz compinit
+export ZCOMPDUMP="$HOME/.zcompdump"
+if [[ ! -f "$ZCOMPDUMP" || ! -s "$ZCOMPDUMP" || -n "$ZCOMPDUMP"(#qN.mh+24) ]]; then
+  # Regenerate if file doesn't exist, is empty, or older than 24 hours
+  compinit
+else
+  # Use cached version, skip security checks
+  compinit -C
+fi
+unset ZCOMPDUMP
+source <(fzf --zsh)
+
+# Pure prompt
+autoload -U promptinit; promptinit
+prompt pure
+
+# PYENV
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+# Use --no-rehash for faster startup (rehash happens automatically on pyenv commands)
+eval "$(pyenv init - --no-rehash zsh)"
+
+# DIRENV
+eval "$(direnv hook zsh)"
+
+export NVM_DIR="$HOME/.nvm"
+# Add NVM's current version to PATH so all npm-installed commands work
+# but lazy-load the nvm function itself for version switching
+if [[ -d "$NVM_DIR/versions/node" ]]; then
+  # Use the latest installed version (sorted alphabetically, v22.15.0 comes after v22.14.0)
+  NVM_LATEST_VERSION=$(command ls -1 "$NVM_DIR/versions/node" | sort -V | tail -1)
+  if [[ -n "$NVM_LATEST_VERSION" && -d "$NVM_DIR/versions/node/$NVM_LATEST_VERSION" ]]; then
+    export PATH="$NVM_DIR/versions/node/$NVM_LATEST_VERSION/bin:$PATH"
+  fi
+fi
+
+# Lazy load nvm function only when explicitly called (for version switching)
+nvm() {
+  unset -f nvm
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  nvm "$@"
+}
+
+# ----- USER CUSTOMIZATIONS -----
+if [[ -f "$HOME/.zshrc.local" ]]; then
+  source "$HOME/.zshrc.local"
+fi
