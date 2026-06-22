@@ -4,6 +4,7 @@ brew "jq"
 brew "pipx"
 brew "tmux"
 brew "neovim"
+brew "tree-sitter-cli" # required by nvim-treesitter `main` branch (Neovim 0.12+)
 brew "direnv"
 brew "python@3"
 brew "xz"

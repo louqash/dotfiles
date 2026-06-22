@@ -3,7 +3,7 @@ set -euo pipefail
 
 info() { printf "\033[1;34m==>\033[0m %s\n" "$1"; }
 
-TPM_DIR="$HOME/.tmux/plugins/tpm"
+TPM_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/tmux/plugins/tpm"
 
 if [[ -d "$TPM_DIR" ]]; then
     info "TPM already installed."
