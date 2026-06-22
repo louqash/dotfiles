@@ -20,7 +20,7 @@ require("lazy").setup({
     end,
   },
   {
-    'nvim-telescope/telescope.nvim', tag = '0.1.8',
+    'nvim-telescope/telescope.nvim', tag = 'v0.2.2',
     dependencies = { 'nvim-lua/plenary.nvim' }
   },
   {
@@ -30,7 +30,12 @@ require("lazy").setup({
       "rafamadriz/friendly-snippets",
     },
   },
-  {"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"},
+  {
+    "nvim-treesitter/nvim-treesitter",
+    branch = "main",
+    lazy = false,
+    build = ":TSUpdate",
+  },
   'mbbill/undotree',
   {'williamboman/mason.nvim'},
   {'williamboman/mason-lspconfig.nvim'},
@@ -50,5 +55,17 @@ require("lazy").setup({
   },
   {
     'chrisgrieser/nvim-justice',
+  },
+  {
+    'Julian/lean.nvim',
+    event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
+    dependencies = {
+      'neovim/nvim-lspconfig',
+      'nvim-lua/plenary.nvim',
+      'hrsh7th/nvim-cmp',
+    },
+    opts = {
+      mappings = true,
+    },
   }
 })

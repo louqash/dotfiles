@@ -4,5 +4,13 @@
   "BACKGROUND_COLOR": "#121214",
   "offloadAdmControls": true,
   "USE_NEW_UPDATER": true,
-  "chromiumSwitches": {}
+  "chromiumSwitches": {},
+  "IS_MAXIMIZED": false,
+  "IS_MINIMIZED": false,
+  "WINDOW_BOUNDS": {
+    "x": 116,
+    "y": 76,
+    "width": 1280,
+    "height": 720
+  }
 }
