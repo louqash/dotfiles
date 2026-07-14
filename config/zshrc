@@ -1,32 +1,36 @@
+# ----- HELPERS -----
+_have() { command -v "$1" >/dev/null 2>&1; }
+
 # ----- ALIASES -----
 alias ll="ls -alF"
 alias la="ls -A"
 alias l="ls -CF"
 alias gti="git"
 alias ..="cd .."
-alias vim="nvim"
-alias vi="nvim"
 
 # ----- SSH-AGENT -----
 SSH_ENV="$HOME/.ssh/environment"
+SSH_AGENT_BIN="$(command -v ssh-agent || true)"
 
 start_agent() {
     echo "Initialising new SSH agent..."
-    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
+    "$SSH_AGENT_BIN" | sed 's/^echo/#echo/' > "${SSH_ENV}"
     echo succeeded
     chmod 600 "${SSH_ENV}"
     . "${SSH_ENV}" > /dev/null
 }
 
-# Only start agent if environment file doesn't exist or agent isn't running
-if [[ -f "${SSH_ENV}" ]]; then
-    . "${SSH_ENV}" > /dev/null
-    # Check if the agent is still running
-    if ! kill -0 "${SSH_AGENT_PID}" 2>/dev/null; then
+# Only start agent if we have ssh-agent available
+if [[ -n "$SSH_AGENT_BIN" ]]; then
+    if [[ -f "${SSH_ENV}" ]]; then
+        . "${SSH_ENV}" > /dev/null
+        # Check if the agent is still running
+        if ! kill -0 "${SSH_AGENT_PID}" 2>/dev/null; then
+            start_agent
+        fi
+    else
         start_agent
     fi
-else
-    start_agent
 fi
 
 # ----- HISTORY FIX -----
@@ -51,7 +55,6 @@ setopt HIST_BEEP                 # Beep when accessing nonexistent history.
 # ----- EXPORTS -----
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
-export EDITOR="vim"
 export TERM="xterm-256color"
 export CLICOLOR=1
 export AWS_DEFAULT_PROFILE=dev-sandbox-0-engineer
@@ -60,27 +63,53 @@ bindkey -v
 bindkey "^R" history-incremental-search-backward
 bindkey "^I" expand-or-complete
 
-# Set PATH, MANPATH, etc., for Homebrew.
-eval "$(/opt/homebrew/bin/brew shellenv)"
-export PATH="$(brew --prefix make)/libexec/gnubin:$PATH"
-export PATH="/opt/homebrew/opt/helm@3/bin:$PATH"
-export PATH="/opt/homebrew/opt/binutils/bin:$PATH"
+# ----- BASE PATH -----
 export PATH="$PATH:$HOME/.local/bin"
 export PATH="$PATH:$HOME/scripts"
 export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-export PATH="$(brew --prefix)/share/google-cloud-sdk/bin:$PATH"
-export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"
-export PATH="$HOME/.opencode/bin:$PATH"
-export PATH="$HOME/.elan/bin:$PATH"
 
-# Cache brew prefix to avoid repeated calls
-HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-/opt/homebrew}"
+# ----- HOMEBREW (macOS + Linuxbrew) -----
+# Find brew wherever it lives and load its shell environment.
+for _brew in /opt/homebrew/bin/brew /usr/local/bin/brew \
+             /home/linuxbrew/.linuxbrew/bin/brew "$HOME/.linuxbrew/bin/brew"; do
+    if [[ -x "$_brew" ]]; then
+        eval "$("$_brew" shellenv)"
+        break
+    fi
+done
+unset _brew
 
+# Homebrew-provided tooling (mostly macOS). Each entry is a no-op if not installed.
+if _have brew; then
+    HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-$(brew --prefix)}"
+    _gnubin="$(brew --prefix make 2>/dev/null)/libexec/gnubin"
+    [[ -d "$_gnubin" ]] && export PATH="$_gnubin:$PATH"
+    [[ -d "$HOMEBREW_PREFIX/opt/helm@3/bin" ]]     && export PATH="$HOMEBREW_PREFIX/opt/helm@3/bin:$PATH"
+    [[ -d "$HOMEBREW_PREFIX/opt/binutils/bin" ]]   && export PATH="$HOMEBREW_PREFIX/opt/binutils/bin:$PATH"
+    [[ -d "$HOMEBREW_PREFIX/opt/openjdk@21/bin" ]] && export PATH="$HOMEBREW_PREFIX/opt/openjdk@21/bin:$PATH"
+    [[ -d "$HOMEBREW_PREFIX/share/google-cloud-sdk/bin" ]] && \
+        export PATH="$HOMEBREW_PREFIX/share/google-cloud-sdk/bin:$PATH"
+    unset _gnubin
+fi
+
+# Extra tool locations (added only if present)
+[[ -d "$HOME/.opencode/bin" ]] && export PATH="$HOME/.opencode/bin:$PATH"
+[[ -d "$HOME/.elan/bin" ]]     && export PATH="$HOME/.elan/bin:$PATH"
+
+# ----- MICROMAMBA (no-sudo Linux) -----
+# Activates the `dotfiles` conda-forge env so its tools become available below.
+export MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-$HOME/.local/share/mamba}"
+if [[ -x "$HOME/.local/bin/micromamba" ]]; then
+    eval "$("$HOME/.local/bin/micromamba" shell hook --shell zsh 2>/dev/null)"
+    micromamba activate dotfiles 2>/dev/null
+fi
+
+# ----- COMPLETIONS -----
 # Set up all fpath entries before compinit
 fpath+=~/.zfunc
-fpath+=("$HOMEBREW_PREFIX/share/zsh/site-functions")
+fpath+=("$HOME/.zsh/pure")
+[[ -n "${HOMEBREW_PREFIX:-}" ]] && fpath+=("$HOMEBREW_PREFIX/share/zsh/site-functions")
 
-# Cache compinit - only regenerate dump file once per day
 autoload -Uz compinit
 export ZCOMPDUMP="$HOME/.zcompdump"
 if [[ ! -f "$ZCOMPDUMP" || ! -s "$ZCOMPDUMP" || -n "$ZCOMPDUMP"(#qN.mh+24) ]]; then
@@ -91,26 +120,47 @@ else
   compinit -C
 fi
 unset ZCOMPDUMP
-source <(fzf --zsh)
 
-# Pure prompt
+# ----- FZF -----
+_have fzf && source <(fzf --zsh) 2>/dev/null
+
+# ----- PROMPT -----
 autoload -U promptinit; promptinit
-prompt pure
+# Use pure if available (brew on macOS, ~/.zsh/pure elsewhere), else a plain prompt.
+if (( ${prompt_themes[(I)pure]} )); then
+  prompt pure
+else
+  PROMPT='%F{blue}%n@%m%f %F{cyan}%~%f %# '
+fi
 
-# PYENV
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-# Use --no-rehash for faster startup (rehash happens automatically on pyenv commands)
-eval "$(pyenv init - --no-rehash zsh)"
+# ----- EDITOR / VIM -----
+if _have nvim; then
+  alias vim="nvim"
+  alias vi="nvim"
+  export EDITOR="nvim"
+elif _have vim; then
+  export EDITOR="vim"
+else
+  export EDITOR="vi"
+fi
 
-# DIRENV
-eval "$(direnv hook zsh)"
+# ----- PYENV -----
+export PYENV_ROOT="${PYENV_ROOT:-$HOME/.pyenv}"
+[[ -d "$PYENV_ROOT/bin" ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+if _have pyenv; then
+  # Use --no-rehash for faster startup (rehash happens automatically on pyenv commands)
+  eval "$(pyenv init - --no-rehash zsh)"
+fi
 
+# ----- DIRENV -----
+_have direnv && eval "$(direnv hook zsh)"
+
+# ----- NVM -----
 export NVM_DIR="$HOME/.nvm"
 # Add NVM's current version to PATH so all npm-installed commands work
 # but lazy-load the nvm function itself for version switching
 if [[ -d "$NVM_DIR/versions/node" ]]; then
-  # Use the latest installed version (sorted alphabetically, v22.15.0 comes after v22.14.0)
+  # Use the latest installed version (sorted by version)
   NVM_LATEST_VERSION=$(command ls -1 "$NVM_DIR/versions/node" | sort -V | tail -1)
   if [[ -n "$NVM_LATEST_VERSION" && -d "$NVM_DIR/versions/node/$NVM_LATEST_VERSION" ]]; then
     export PATH="$NVM_DIR/versions/node/$NVM_LATEST_VERSION/bin:$PATH"
@@ -118,11 +168,13 @@ if [[ -d "$NVM_DIR/versions/node" ]]; then
 fi
 
 # Lazy load nvm function only when explicitly called (for version switching)
-nvm() {
-  unset -f nvm
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  nvm "$@"
-}
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  nvm() {
+    unset -f nvm
+    \. "$NVM_DIR/nvm.sh"
+    nvm "$@"
+  }
+fi
 
 # ----- USER CUSTOMIZATIONS -----
 if [[ -f "$HOME/.zshrc.local" ]]; then
