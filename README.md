@@ -39,7 +39,10 @@ DOTFILES_VARIANT=linux-nosudo ./setup.sh
 
 **No-sudo notes:** everything is installed into your home directory (a
 micromamba env under `~/.local/share/mamba`), no root required. Tools that
-aren't available are skipped rather than failing the run. Since `chsh` needs
+aren't available are skipped rather than failing the run. Neovim is the one
+exception to conda-forge — its editor isn't packaged there (the conda `neovim`
+package is the `pynvim` client), so it's fetched from the official static
+release into `~/.local/opt/nvim`. Since `chsh` needs
 root to register a new shell, a launcher is appended to `~/.bashrc` /
 `~/.profile` that `exec`s the micromamba `zsh` for interactive sessions (set
 `DOTFILES_NO_ZSH=1` to disable it).

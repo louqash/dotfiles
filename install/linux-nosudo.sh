@@ -13,13 +13,15 @@ export MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-$HOME/.local/share/mamba}"
 MICROMAMBA="$BIN_DIR/micromamba"
 ENV_NAME="dotfiles"
 
-# conda-forge packages. Names differ slightly from Homebrew/apt:
-#   github-cli -> gh, tree-sitter -> tree-sitter-cli, procps-ng -> watch
+# conda-forge packages. Names differ from Homebrew/apt:
+#   github-cli -> gh, tree-sitter-cli -> tree-sitter, procps-ng -> watch
+# NOTE: the conda-forge package literally named `neovim` is the pynvim Python
+# client, NOT the editor. Neovim itself is installed from its official static
+# release below (install_neovim), since conda-forge has no editor package.
 PACKAGES=(
     git
     jq
     tmux
-    neovim
     direnv
     python
     fzf
@@ -27,7 +29,9 @@ PACKAGES=(
     zsh
     nodejs
     just
-    tree-sitter
+    tree-sitter-cli   # required by nvim-treesitter `main` branch
+    c-compiler        # compiles treesitter parsers at runtime (:TSInstall)
+    make
     cmake
     pkg-config
     github-cli
@@ -89,6 +93,38 @@ if ! "$MICROMAMBA" create -y -n "$ENV_NAME" -c conda-forge "${PACKAGES[@]}" 2>/d
         fi
     done
 fi
+
+# ----- Install Neovim (official static release; conda-forge has no editor) -----
+install_neovim() {
+    if command -v nvim >/dev/null 2>&1; then
+        info "nvim already on PATH — skipping Neovim download."
+        return 0
+    fi
+    case "$(uname -m)" in
+        x86_64|amd64)  nv_assets=("nvim-linux-x86_64.tar.gz" "nvim-linux64.tar.gz") ;;
+        aarch64|arm64) nv_assets=("nvim-linux-arm64.tar.gz") ;;
+        *) warn "No prebuilt Neovim for $(uname -m) — skipping (edit config still symlinked)."; return 0 ;;
+    esac
+
+    local dest="$HOME/.local/opt/nvim"
+    mkdir -p "$HOME/.local/opt"
+    for asset in "${nv_assets[@]}"; do
+        info "Downloading Neovim ($asset)..."
+        rm -rf "$dest"; mkdir -p "$dest"
+        # Tarball top dir (e.g. nvim-linux-x86_64/) is stripped so bin/, lib/,
+        # share/ land directly in $dest; nvim resolves its runtime relative to
+        # the real binary path, so the ~/.local/bin symlink stays correct.
+        if fetch "https://github.com/neovim/neovim/releases/latest/download/$asset" \
+            | tar -xz --strip-components=1 -C "$dest" 2>/dev/null && [[ -x "$dest/bin/nvim" ]]; then
+            ln -sf "$dest/bin/nvim" "$BIN_DIR/nvim"
+            success "Neovim installed ($("$dest/bin/nvim" --version | head -1))."
+            return 0
+        fi
+    done
+    rm -rf "$dest"
+    warn "Could not download Neovim — skipping (its config is still symlinked for when nvim is available)."
+}
+install_neovim
 
 # ----- Install pure prompt (not on conda-forge) -----
 PURE_DIR="$HOME/.zsh/pure"
