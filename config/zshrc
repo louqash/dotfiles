@@ -96,14 +96,6 @@ fi
 [[ -d "$HOME/.opencode/bin" ]] && export PATH="$HOME/.opencode/bin:$PATH"
 [[ -d "$HOME/.elan/bin" ]]     && export PATH="$HOME/.elan/bin:$PATH"
 
-# ----- MICROMAMBA (no-sudo Linux) -----
-# Activates the `dotfiles` conda-forge env so its tools become available below.
-export MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-$HOME/.local/share/mamba}"
-if [[ -x "$HOME/.local/bin/micromamba" ]]; then
-    eval "$("$HOME/.local/bin/micromamba" shell hook --shell zsh 2>/dev/null)"
-    micromamba activate dotfiles 2>/dev/null
-fi
-
 # ----- COMPLETIONS -----
 # Set up all fpath entries before compinit
 fpath+=~/.zfunc
