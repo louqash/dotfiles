@@ -36,6 +36,4 @@ done
 
 if [[ "$OS" == "Darwin" ]]; then
     link "$DOTFILES_DIR/config/karabiner" "$HOME/.config/karabiner"
-    link "$DOTFILES_DIR/config/discord-settings.json" \
-         "$HOME/Library/Application Support/discord/settings.json"
 fi
