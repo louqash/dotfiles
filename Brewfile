@@ -14,6 +14,7 @@ brew "poetry"
 brew "pyenv"
 brew "fzf"
 brew "ripgrep"
+brew "rsync" # GNU rsync — needed for --iconv (macOS<->exFAT filename normalization) in scripts/backup
 brew "watch"
 brew "mas"
 brew "pure"

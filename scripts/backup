@@ -1,86 +1,303 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Robust incremental (mirror) backup using rsync.
+#
+# Files are copied as plain files onto the destination — no archives, no
+# packaging — so the backup can be browsed and restored directly from any OS.
+#
+# Designed for an exFAT destination (e.g. a VeraCrypt volume shared between
+# machines). See the notes at the bottom of this file for why the rsync flags
+# are chosen the way they are.
+#
+set -euo pipefail
 
-# Check if destination argument is provided
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 <destination_drive>"
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [--dry-run] [--checksum] <destination_drive>
+
+  <destination_drive>  Mount point of the mounted/decrypted backup drive,
+                       e.g. /Volumes/ADATA
+  --dry-run            Show what would change, but write nothing.
+  --checksum           Compare file *contents* (hash) instead of size+mtime.
+                       Slower, but immune to any filesystem timestamp quirks.
+                       Use this if you ever still see unchanged files copied.
+EOF
     exit 1
-fi
+}
 
-DEST_DRIVE="$1"
+# --- parse arguments --------------------------------------------------------
+
+DRY_RUN=0
+CHECKSUM=0
+DEST_DRIVE=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dry-run)  DRY_RUN=1 ;;
+        --checksum) CHECKSUM=1 ;;
+        -h|--help)  usage ;;
+        -*)         echo "Unknown option: $1" >&2; usage ;;
+        *)
+            if [ -n "$DEST_DRIVE" ]; then
+                echo "Error: more than one destination given" >&2; usage
+            fi
+            DEST_DRIVE="$1"
+            ;;
+    esac
+    shift
+done
+
+[ -n "$DEST_DRIVE" ] || usage
+DEST_DRIVE="${DEST_DRIVE%/}"           # strip trailing slash
+
 DEST_PATH="$DEST_DRIVE/Backup"
 LOGS_DIR="$DEST_PATH/logs"
 MAIN_LOG_FILE="$LOGS_DIR/backup.log"
 
-# List of directories to backup
+# --- what to back up --------------------------------------------------------
+
 BACKUP_DIRS=(
     "$HOME/Documents/Second Brain"
-    "$HOME/Google Drive/My Drive"
+    "$HOME/nextcloud"
     "$HOME/workplace"
-    "$HOME/Calibre Library"
-    "$HOME/Lotne Materie"
+    # Calibre Library now lives inside ~/nextcloud, so it's covered by that entry.
 )
-# List of patterns to exclude
+
+# Exclude patterns. A leading "/" anchors the pattern to the root of the
+# *current* source (each source is synced independently), so "/work/" only
+# matches ~/workplace/work and nothing under the other sources.
 EXCLUDE_PATTERNS=(
-    "/workplace/work/"
     ".DS_Store"
-    ".git"
-    "node_modules"
-    ".venv"
+    ".git/"
+    "node_modules/"
+    ".venv/"
+    "_deps/"        # CMake FetchContent'd dependency sources — regenerable, and
+                    # the source of emoji-named test fixtures that can't be
+                    # Unicode-normalised (so they'd churn every run)
+    "CMakeFiles/"   # CMake internal build state — regenerable junk
+    "/work/"
+    # Nextcloud desktop-client internals — local trash and sync bookkeeping.
+    # These aren't real data and their files are often half-deleted/virtual,
+    # which throws "Stale NFS file handle" errors mid-backup.
+    ".Trash/"
+    ".sync_*.db*"
+    "*.owncloudsync.log*"
+    "*(conflicted copy*"
 )
 
-# Create exclude pattern string for rsync
-EXCLUDE_STRING=""
-for pattern in "${EXCLUDE_PATTERNS[@]}"; do
-    EXCLUDE_STRING="$EXCLUDE_STRING --exclude='$pattern'"
-done
+# --- helpers ----------------------------------------------------------------
 
+log() { printf '%s  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
-# Check if destination drive is mounted
+# --- preflight checks -------------------------------------------------------
+
 if [ ! -d "$DEST_DRIVE" ]; then
-    echo "Error: Destination drive '$DEST_DRIVE' is not mounted"
+    echo "Error: destination drive '$DEST_DRIVE' is not mounted" >&2
     exit 1
 fi
 
-# Create backup and logs directories if it doesn't exist
-mkdir -p "$DEST_PATH"
-mkdir -p "$LOGS_DIR"
+# Destination must be writable (catches a read-only / not-decrypted volume).
+if ! touch "$DEST_DRIVE/.backup_write_test" 2>/dev/null; then
+    echo "Error: destination drive '$DEST_DRIVE' is not writable" >&2
+    exit 1
+fi
+rm -f "$DEST_DRIVE/.backup_write_test"
 
-# Check if source directories exist
+# Every source must exist. If one is missing (e.g. a cloud folder not synced),
+# abort rather than let --delete wipe its backup copy.
 for dir in "${BACKUP_DIRS[@]}"; do
     if [ ! -d "$dir" ]; then
-        echo "Error: Source directory '$dir' does not exist"
+        echo "Error: source directory '$dir' does not exist — aborting" >&2
+        echo "       (refusing to run so --delete cannot erase its backup)" >&2
         exit 1
     fi
 done
 
-# Print last backup time
-if [ -f "$MAIN_LOG_FILE" ]; then
-    echo "Last backup was performed on:"
-    tail -n 1 "$MAIN_LOG_FILE"
-else
-    echo "No previous backup found"
-fi
-
-# Get timestamp for log files
-TIMESTAMP=$(date "+%Y%m%d_%H%M%S")
-
-# Perform backup
-echo "Starting backup to $DEST_DRIVE..."
+# Guard against two backup folders colliding on the same basename.
+declare -A seen_names
 for dir in "${BACKUP_DIRS[@]}"; do
-    dir_name=$(basename "$dir")
-    echo "Backing up $dir_name..."
-
-    RSYNC_LOG="$LOGS_DIR/${dir_name}_${TIMESTAMP}.log"
-    
-    eval rsync -av --delete --progress $EXCLUDE_STRING \"$dir\" \"$DEST_PATH/\" 2>&1 | tee "$RSYNC_LOG"|| {
-        echo "Error: Failed to backup $dir_name"
-        echo "Error: Backup of $dir_name failed at $TIMESTAMP" >> "$MAIN_LOG_FILE"
-    }
+    n="$(basename "${dir%/}")"
+    if [ -n "${seen_names[$n]:-}" ]; then
+        echo "Error: two sources share the basename '$n' — they'd overwrite" >&2
+        echo "       each other in the backup. Rename or restructure." >&2
+        exit 1
+    fi
+    seen_names[$n]=1
 done
 
-# Log successful backup
-echo "Backup completed successfully at $TIMESTAMP" >> "$MAIN_LOG_FILE"
- 
-echo "Backup completed successfully"
-echo "Backup log updated at $MAIN_LOG_FILE"
+mkdir -p "$DEST_PATH" "$LOGS_DIR"
 
+# Prevent overlapping runs (mkdir is atomic, works without flock on macOS).
+LOCK_DIR="$DEST_PATH/.backup.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    echo "Error: another backup seems to be running (lock: $LOCK_DIR)." >&2
+    echo "       If you're sure it isn't, remove that directory and retry." >&2
+    exit 1
+fi
+trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+
+# --- pick an rsync binary ---------------------------------------------------
+
+# Apple's bundled rsync (openrsync) lacks --iconv, which is required to stop
+# macOS<->exFAT Unicode filename churn (see the --iconv note below). Prefer a
+# Homebrew GNU rsync if one is installed; otherwise fall back to PATH rsync.
+RSYNC_BIN=""
+for cand in /opt/homebrew/bin/rsync /usr/local/bin/rsync "$(command -v rsync || true)"; do
+    if [ -n "$cand" ] && [ -x "$cand" ]; then RSYNC_BIN="$cand"; break; fi
+done
+[ -n "$RSYNC_BIN" ] || { echo "Error: no rsync found in PATH" >&2; exit 1; }
+
+# Capture the help text once, then test against it with a here-string. We avoid
+# `rsync --help | grep -q` because under `set -o pipefail` grep -q closes the
+# pipe early, rsync dies with SIGPIPE, and the pipeline reports failure even
+# when the option IS supported.
+RSYNC_HELP="$("$RSYNC_BIN" --help 2>&1 || true)"
+rsync_supports() { grep -q -- "$1" <<<"$RSYNC_HELP"; }
+
+# --- rsync options ----------------------------------------------------------
+
+# -r recurse, -l keep symlinks as symlinks, -t preserve modification times.
+#
+# We deliberately DO NOT use -a (archive), because -a also preserves
+# permissions/owner/group (-p -o -g). An exFAT/NTFS volume cannot store those,
+# so rsync would "update" the metadata of every file on every run — which is
+# exactly the "files that were not changed keep getting updated" symptom.
+RSYNC_OPTS=(
+    -rlt
+    --delete                 # mirror: remove files deleted from the source
+    --delete-excluded        # also drop excluded junk already on the backup
+    --modify-window=2        # tolerate exFAT/FAT 2-second timestamp rounding
+    --itemize-changes        # one readable line per change, with the reason
+    --stats                  # per-directory summary at the end
+)
+[ "$DRY_RUN"  -eq 1 ] && RSYNC_OPTS+=(--dry-run)
+[ "$CHECKSUM" -eq 1 ] && RSYNC_OPTS+=(--checksum)
+
+# Unicode filename normalisation. The macOS exFAT driver stores every filename
+# in *decomposed* form (NFD, "utf-8-mac") — e.g. "ń" becomes "n" + a combining
+# accent. Our sources (Nextcloud/Obsidian, git checkouts) are mostly *composed*
+# (NFC, "utf-8"). Without normalisation rsync sees the two forms as different
+# names and deletes+recreates every file with an accent/emoji/non-ASCII name
+# (Polish titles, etc.) on EVERY run. --iconv=LOCAL,REMOTE tells rsync the
+# source (local) is utf-8 and the destination (remote) is utf-8-mac, so it
+# converts names to NFD to match what exFAT reports back. Direction verified
+# empirically against this drive. Only GNU rsync supports --iconv; Apple's
+# openrsync does not.
+if rsync_supports '--iconv'; then
+    RSYNC_OPTS+=(--iconv=utf-8,utf-8-mac)
+    ICONV_OK=1
+else
+    ICONV_OK=0
+fi
+
+# --human-readable isn't supported by every rsync build (e.g. openrsync).
+rsync_supports '--human-readable' && RSYNC_OPTS+=(--human-readable)
+
+for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+    RSYNC_OPTS+=(--exclude="$pattern")
+done
+
+if [ "$ICONV_OK" -eq 0 ]; then
+    echo "WARNING: '$RSYNC_BIN' has no --iconv support." >&2
+    echo "         Files with accented/non-ASCII names will be recopied every" >&2
+    echo "         run on this exFAT drive. Install GNU rsync to fix it:" >&2
+    echo "           brew install rsync" >&2
+    echo >&2
+fi
+
+# --- run --------------------------------------------------------------------
+
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+
+if [ -f "$MAIN_LOG_FILE" ]; then
+    echo "Most recent backup log entries:"
+    tail -n 3 "$MAIN_LOG_FILE"
+    echo
+fi
+
+[ "$DRY_RUN" -eq 1 ] && log "*** DRY RUN — nothing will be written ***"
+log "===== Backup run $TIMESTAMP -> $DEST_PATH =====" | tee -a "$MAIN_LOG_FILE"
+
+overall_status=0
+for dir in "${BACKUP_DIRS[@]}"; do
+    src="${dir%/}"
+    name="$(basename "$src")"
+    dest="$DEST_PATH/$name"
+    rsync_log="$LOGS_DIR/${name// /_}_${TIMESTAMP}.log"
+
+    log "Backing up: $name"
+    mkdir -p "$dest"
+
+    # Note the trailing slash on "$src/": it copies the *contents* of the
+    # source into its own dedicated "$dest/" folder, which keeps --delete
+    # scoped to that one folder and never touches the others.
+    #
+    # PIPESTATUS[0] gives rsync's own exit code (tee would otherwise mask it).
+    # Disable errexit around the pipe so a non-zero rsync doesn't abort the
+    # whole script before we can inspect and classify the code below.
+    set +e
+    "$RSYNC_BIN" "${RSYNC_OPTS[@]}" "$src/" "$dest/" 2>&1 | tee "$rsync_log"
+    rc=${PIPESTATUS[0]}
+    set -e
+
+    files=$(grep -m1 'Number of files transferred' "$rsync_log" \
+            | grep -oE '[0-9]+' | head -1 || true)
+    bytes=$(grep -m1 'Total transferred file size' "$rsync_log" \
+            | sed -E 's/.*: *//' || true)
+    summary="${files:-0} files, ${bytes:-0} transferred"
+
+    case "$rc" in
+        0)
+            log "OK    $name — $summary" | tee -a "$MAIN_LOG_FILE"
+            ;;
+        24)
+            # 24 = some source files vanished before rsync copied them. Benign
+            # for a live-syncing folder (Nextcloud, etc.) — everything that
+            # still existed was backed up. Warn, but don't fail the run.
+            log "WARN  $name — $summary (some files vanished mid-copy)" \
+                | tee -a "$MAIN_LOG_FILE"
+            ;;
+        *)
+            overall_status=1
+            log "FAIL  $name (rsync exit $rc) — see $rsync_log" \
+                | tee -a "$MAIN_LOG_FILE"
+            ;;
+    esac
+    echo
+done
+
+if [ "$overall_status" -eq 0 ]; then
+    log "===== Backup completed successfully ($TIMESTAMP) =====" \
+        | tee -a "$MAIN_LOG_FILE"
+else
+    log "===== Backup completed WITH ERRORS ($TIMESTAMP) — check logs =====" \
+        | tee -a "$MAIN_LOG_FILE"
+fi
+
+# Keep the log directory from growing forever: retain the 40 most recent
+# per-directory logs (the main backup.log is never touched).
+ls -1t "$LOGS_DIR"/*_*.log 2>/dev/null | tail -n +41 | while read -r old; do
+    rm -f "$old"
+done
+
+exit "$overall_status"
+
+# ----------------------------------------------------------------------------
+# Notes
+# ----------------------------------------------------------------------------
+# Why files "kept getting re-copied":
+#   The old script used `rsync -a`. On an exFAT destination, -a's permission/
+#   owner/group preservation can't be honoured, so rsync flagged every file as
+#   changed each run. Using -rlt (no perms/owner/group) fixes that.
+#
+# Why "unrelated files were removed":
+#   The old script synced every source into the same folder ($DEST/) and one
+#   source ("nextcloud/") had a trailing slash, so its *contents* landed at the
+#   root of $DEST. Combined with --delete, each run wiped the other backup
+#   folders (and the logs) before recreating them. Now every source syncs into
+#   its own $DEST/<name>/ folder, so --delete only ever affects that folder.
+#
+# If you STILL see unchanged files being copied (e.g. after opening the drive
+# on Windows/Linux, where exFAT timestamps can shift by the DST offset), run
+# once with --checksum to resync by content, then go back to normal runs.
+# ----------------------------------------------------------------------------
