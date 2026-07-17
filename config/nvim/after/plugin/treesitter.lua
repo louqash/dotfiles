@@ -4,8 +4,8 @@
 -- enabled per-buffer with `vim.treesitter.start()`.
 
 local ensure_installed = {
-  "c", "python", "bash", "lua", "vim", "vimdoc", "query",
-  "rust", "toml", "markdown", "markdown_inline", "just",
+  "c", "cpp", "cmake", "python", "bash", "lua", "vim", "vimdoc", "query",
+  "rust", "toml", "markdown", "markdown_inline", "just", "typst",
 }
 
 require("nvim-treesitter").install(ensure_installed)

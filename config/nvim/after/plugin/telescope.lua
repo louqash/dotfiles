@@ -2,8 +2,14 @@ local builtin = require('telescope.builtin')
 vim.keymap.set('n', '<leader>pf', builtin.find_files, {})
 vim.keymap.set('n', '<C-p>', builtin.git_files, {})
 vim.keymap.set('n', '<leader>fg', builtin.live_grep, {})
-vim.keymap.set('n', '<leader>ps', function()
-	builtin.grep_string({search = vim.fn.input("Grep > ") });
+-- Grep for the current visual selection.
+vim.keymap.set('x', '<leader>ps', function()
+	local save = vim.fn.getreg('v')
+	local save_type = vim.fn.getregtype('v')
+	vim.cmd('noautocmd normal! "vy')
+	local text = vim.fn.getreg('v')
+	vim.fn.setreg('v', save, save_type)
+	builtin.grep_string({ search = text })
 end)
 
 require("telescope").setup { 

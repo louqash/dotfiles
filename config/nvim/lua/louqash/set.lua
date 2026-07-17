@@ -34,8 +34,8 @@ vim.opt.colorcolumn = "80"
 vim.opt.foldmethod = "indent"
 
 vim.g.netrw_banner = 0 -- Hide banner
-vim.g.netrw_browse_split = 4 -- Open in previous window
+vim.g.netrw_browse_split = 0 -- Open files in the same netrw window (replace it)
 vim.g.netrw_altv = 1 -- Open with right splitting
 vim.g.netrw_preview = 1 -- Use Vertical splits
 vim.g.netrw_liststyle = 3 -- Tree-style view
-vim.g.netrw_winsize = 10
+vim.g.netrw_winsize = 25 -- Side explorer / drawer takes 25% width
