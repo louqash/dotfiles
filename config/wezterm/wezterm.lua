@@ -4,7 +4,9 @@ local config = wezterm.config_builder()
 config.color_scheme = "Solarized (light) (terminal.sexy)"
 
 -- Font
+config.harfbuzz_features = { 'calt=0', 'clig=0', 'liga=0' }
 config.font = wezterm.font("JetBrainsMono Nerd Font")
+
 config.font_size = 14.0
 
 -- Window
