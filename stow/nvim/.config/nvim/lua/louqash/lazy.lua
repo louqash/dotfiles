@@ -32,38 +32,15 @@ require("lazy").setup({
   },
   {
     "nvim-treesitter/nvim-treesitter",
-    branch = "main",
+    branch = "master",
     lazy = false,
     build = ":TSUpdate",
   },
   'mbbill/undotree',
-  {
-    "iamcco/markdown-preview.nvim",
-    cmd = { "MarkdownPreview", "MarkdownPreviewStop", "MarkdownPreviewToggle" },
-    ft = { "markdown" },
-    -- Build from source via node instead of the prebuilt-binary download.
-    -- The binary download (mkdp#util#install) is a raw curl|tar with no
-    -- integrity check and can silently truncate; the node build is reliable
-    -- and reproducible. Requires node at build+run time (see Brewfile).
-    build = "cd app && npm install",
-  },
-  {
-    "chomosuke/typst-preview.nvim",
-    ft = "typst",
-    version = "1.*",
-    opts = {
-      follow_cursor = true, -- preview scrolls to follow the editor cursor
-      -- Use brew-installed binaries (see Brewfile) instead of the plugin's
-      -- default behavior of downloading prebuilt binaries at build time.
-      dependencies_bin = {
-        ["tinymist"] = "tinymist",
-        ["websocat"] = "websocat",
-      },
-    },
-  },
+  'tpope/vim-fugitive',
   {'williamboman/mason.nvim'},
   {'williamboman/mason-lspconfig.nvim'},
-  {'neovim/nvim-lspconfig'},
+  {'neovim/nvim-lspconfig', version = 'v2.*'},
   {'hrsh7th/cmp-nvim-lsp'},
   {'hrsh7th/cmp-path'},
   {'hrsh7th/cmp-nvim-lua'},
