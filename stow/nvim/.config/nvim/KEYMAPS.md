@@ -11,9 +11,9 @@ Mode column: `n` normal · `i` insert · `v` visual · `x` visual-block/charwise
 | Key | Mode | Action |
 | --- | --- | --- |
 | `<leader>ww` | n | Save file (`:w`) |
-| `<leader>y` | n | Yank to system clipboard |
-| `<leader>c` | v | Yank selection to system clipboard |
-| `<leader>v` | v | Paste from system clipboard |
+| `<leader>y` | n | Copy to local terminal clipboard via OSC 52 |
+| `<leader>c` | v | Copy selection via OSC 52 |
+| `<leader>v` | v | Paste the server's last yank |
 | `<leader>p` | x | Paste over selection without clobbering the register |
 | `J` | v | Move selected lines **down** + reindent |
 | `K` | v | Move selected lines **up** + reindent |
@@ -104,28 +104,6 @@ Mode column: `n` normal · `i` insert · `v` visual · `x` visual-block/charwise
 ---
 
 ## Filetype-specific (buffer-local)
-
-### LaTeX — `.tex` (`after/ftplugin/tex.lua`)
-
-| Key | Mode | Action |
-| --- | --- | --- |
-| `<leader>mc` | n | Compile with `latexmk` |
-| `<leader>mp` | n | Toggle live preview |
-| `<leader>mo` | n | Open built PDF |
-
-### Markdown — `.md` (`after/ftplugin/markdown.lua`)
-
-| Key | Mode | Action |
-| --- | --- | --- |
-| `<leader>mp` | n | Toggle browser live-preview |
-
-### Typst — `.typ` (`after/ftplugin/typst.lua`)
-
-| Key | Mode | Action |
-| --- | --- | --- |
-| `<leader>mp` | n | Toggle browser live-preview |
-
----
 
 ## Handy built-ins (not custom-mapped, discussed for reference)
 

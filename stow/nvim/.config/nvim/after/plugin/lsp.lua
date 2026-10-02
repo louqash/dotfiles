@@ -116,13 +116,13 @@ vim.lsp.config('pylsp', {
 
 require('mason').setup({})
 require('mason-lspconfig').setup({
-  ensure_installed = { 'clangd' },
+  ensure_installed = {},
 })
 
 -- mason-lspconfig enables mason-installed servers automatically; enable clangd
 -- explicitly too so a system clangd on PATH works on machines without the
 -- mason-managed one.
-vim.lsp.enable('clangd')
+vim.lsp.enable({ 'clangd', 'pylsp' })
 
 local cmp_select = {behavior = cmp.SelectBehavior.Select}
 
