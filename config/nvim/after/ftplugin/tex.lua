@@ -43,8 +43,8 @@ local function open_pdf()
 end
 
 -- Live preview: latexmk -pvc watches the file and recompiles on every :w.
--- Skim auto-reloads the PDF on change; without it we fall back to `open`
--- (Preview.app), whose auto-refresh is unreliable. Watchers are kept in a
+-- The default PDF viewer may require reopening the PDF to show changes.
+-- Watchers are kept in a
 -- global table so re-sourcing this file can't orphan a running process.
 _G.latexmk_watchers = _G.latexmk_watchers or {}
 
@@ -60,9 +60,6 @@ local function toggle_preview()
 
   vim.cmd.write()
   local cmd = { "latexmk", "-pdf", "-pvc", "-interaction=nonstopmode", "-synctex=1", "-outdir=build" }
-  if vim.uv.fs_stat("/Applications/Skim.app") then
-    vim.list_extend(cmd, { "-e", "$pdf_previewer = q[open -a Skim];" })
-  end
   table.insert(cmd, file)
 
   _G.latexmk_watchers[file] = vim.system(

@@ -9,7 +9,7 @@
 # @raycast.icon 🗒️
 
 # Documentation:
-# @raycast.description Starts new neovim window in WezTerm
+# @raycast.description Starts new neovim window in Ghostty
 # @raycast.author Louqash
 
 on run
@@ -22,6 +22,6 @@ on run
     end if
   end tell
 
-  do shell script "/opt/homebrew/bin/wezterm cli spawn --cwd " & quoted form of dirPath & " -- /opt/homebrew/bin/nvim >/dev/null 2>&1 || /opt/homebrew/bin/wezterm start --cwd " & quoted form of dirPath & " -- /opt/homebrew/bin/nvim >/dev/null 2>&1 &"
+  do shell script "open -na Ghostty --args --working-directory=" & quoted form of dirPath & " -e /opt/homebrew/bin/nvim"
 
 end run
