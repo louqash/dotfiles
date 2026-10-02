@@ -9,7 +9,7 @@
 # @raycast.icon 🖥️
 
 # Documentation:
-# @raycast.description Opens a new WezTerm window
+# @raycast.description Opens a new Ghostty window
 # @raycast.author Louqash
 
-open -a WezTerm -n
+open -a Ghostty -n

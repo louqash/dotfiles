@@ -8,8 +8,9 @@ info "Applying macOS defaults..."
 # Dock
 defaults write com.apple.dock autohide -bool true
 defaults write com.apple.dock mru-spaces -bool false
+"$(cd "$(dirname "$0")" && pwd)/macos-desktop-shortcuts.sh"
 defaults write com.apple.dock persistent-apps -array \
-    '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/Applications/WezTerm.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>' \
+    '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/Applications/Ghostty.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>' \
     '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/Applications/Obsidian.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>' \
     '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/System/Applications/Mail.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>' \
     '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/System/Applications/Calendar.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>'

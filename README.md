@@ -23,11 +23,25 @@ After setup, open a new terminal. In tmux, press `` ` + I `` to install plugins.
 
 | Config | Location | Description |
 |--------|----------|-------------|
-| zshrc | `~/.zshrc` | Zsh with pure prompt, fzf, pyenv, nvm, direnv |
+| zshrc | `~/.zshrc` | Zsh with pure prompt, fzf, pyenv, direnv |
 | nvim | `~/.config/nvim` | Neovim with LSP, telescope, treesitter, catppuccin |
-| alacritty | `~/.config/alacritty` | GPU terminal, JetBrains Mono, catppuccin |
+| ghostty | `~/.config/ghostty` | Terminal, JetBrains Mono, Solarized Light |
 | tmux | `~/.config/tmux` | Catppuccin theme via TPM, backtick prefix |
 | karabiner | `~/.config/karabiner` | Caps Lock → Escape (macOS) |
+
+## Desktop shortcuts (macOS)
+
+Ctrl+1 through Ctrl+9 switch to the corresponding desktop; Ctrl+0 switches to
+Desktop 10. Setup enables these shortcuts, or you can apply them separately:
+
+```bash
+./install/macos-desktop-shortcuts.sh --dry-run
+./install/macos-desktop-shortcuts.sh
+```
+
+Create the desktops in Mission Control first. The script saves existing keyboard
+shortcuts under `~/.local/state/dotfiles/desktop-shortcuts.*` and preserves unrelated
+shortcuts. If macOS does not activate them immediately, log out and back in.
 
 ## Adding/removing packages
 

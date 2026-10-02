@@ -69,7 +69,6 @@ export PATH="$PATH:$HOME/.local/bin"
 export PATH="$PATH:$HOME/scripts"
 export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 export PATH="$(brew --prefix)/share/google-cloud-sdk/bin:$PATH"
-export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"
 export PATH="$HOME/.opencode/bin:$PATH"
 export PATH="$HOME/.elan/bin:$PATH"
 export PATH="/Library/TeX/texbin:$PATH"
@@ -106,24 +105,6 @@ eval "$(pyenv init - --no-rehash zsh)"
 
 # DIRENV
 eval "$(direnv hook zsh)"
-
-export NVM_DIR="$HOME/.nvm"
-# Add NVM's current version to PATH so all npm-installed commands work
-# but lazy-load the nvm function itself for version switching
-if [[ -d "$NVM_DIR/versions/node" ]]; then
-  # Use the latest installed version (sorted alphabetically, v22.15.0 comes after v22.14.0)
-  NVM_LATEST_VERSION=$(command ls -1 "$NVM_DIR/versions/node" | sort -V | tail -1)
-  if [[ -n "$NVM_LATEST_VERSION" && -d "$NVM_DIR/versions/node/$NVM_LATEST_VERSION" ]]; then
-    export PATH="$NVM_DIR/versions/node/$NVM_LATEST_VERSION/bin:$PATH"
-  fi
-fi
-
-# Lazy load nvm function only when explicitly called (for version switching)
-nvm() {
-  unset -f nvm
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  nvm "$@"
-}
 
 # ----- USER CUSTOMIZATIONS -----
 if [[ -f "$HOME/.zshrc.local" ]]; then

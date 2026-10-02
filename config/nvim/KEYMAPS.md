@@ -113,12 +113,6 @@ Mode column: `n` normal · `i` insert · `v` visual · `x` visual-block/charwise
 | `<leader>mp` | n | Toggle live preview |
 | `<leader>mo` | n | Open built PDF |
 
-### Markdown — `.md` (`after/ftplugin/markdown.lua`)
-
-| Key | Mode | Action |
-| --- | --- | --- |
-| `<leader>mp` | n | Toggle browser live-preview |
-
 ### Typst — `.typ` (`after/ftplugin/typst.lua`)
 
 | Key | Mode | Action |

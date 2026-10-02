@@ -24,9 +24,22 @@ link() {
 
 info "Creating symlinks..."
 
+# Remove only obsolete links owned by this checkout.
+for obsolete in "$HOME/.config/wezterm" "$HOME/scripts/raycast_alacritty.sh"; do
+    if [[ -L "$obsolete" ]]; then
+        case "$(readlink "$obsolete")" in
+            "$DOTFILES_DIR/config/wezterm"|"$DOTFILES_DIR/scripts/raycast_alacritty.sh")
+                unlink "$obsolete"
+                ;;
+        esac
+    fi
+done
+
 link "$DOTFILES_DIR/config/zshrc"          "$HOME/.zshrc"
 link "$DOTFILES_DIR/config/nvim"           "$HOME/.config/nvim"
-link "$DOTFILES_DIR/config/wezterm"        "$HOME/.config/wezterm"
+if [[ "$OS" == "Darwin" ]]; then
+    link "$DOTFILES_DIR/config/ghostty" "$HOME/.config/ghostty"
+fi
 link "$DOTFILES_DIR/config/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 
 mkdir -p "$HOME/scripts"

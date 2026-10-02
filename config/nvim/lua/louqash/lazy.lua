@@ -38,16 +38,6 @@ require("lazy").setup({
   },
   'mbbill/undotree',
   {
-    "iamcco/markdown-preview.nvim",
-    cmd = { "MarkdownPreview", "MarkdownPreviewStop", "MarkdownPreviewToggle" },
-    ft = { "markdown" },
-    -- Build from source via node instead of the prebuilt-binary download.
-    -- The binary download (mkdp#util#install) is a raw curl|tar with no
-    -- integrity check and can silently truncate; the node build is reliable
-    -- and reproducible. Requires node at build+run time (see Brewfile).
-    build = "cd app && npm install",
-  },
-  {
     "chomosuke/typst-preview.nvim",
     ft = "typst",
     version = "1.*",
