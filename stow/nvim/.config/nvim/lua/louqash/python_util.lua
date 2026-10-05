@@ -1,31 +1,35 @@
 local M = {}
-M.is_poetry_installed = function()
-    local result = vim.fn.system('poetry --version')
-    return result ~= "" and vim.v.shell_error == 0
+
+local function python_in(environment)
+  if not environment or environment == "" then return nil end
+  for _, suffix in ipairs({ "/bin/python", "/Scripts/python.exe" }) do
+    local python = environment .. suffix
+    if vim.fn.executable(python) == 1 then return python end
+  end
 end
 
-M.get_poetry_project_path = function()
-  local result = vim.fn.system('poetry env info --path')
-  if vim.v.shell_error == 0 then
-    return result:gsub('\n', '')
+function M.get_python_executable(root)
+  root = root or vim.fn.getcwd()
+  -- Prefer the project's environment over an unrelated activated environment.
+  for _, name in ipairs({ ".venv", "venv", "build/venv", "build/.venv" }) do
+    local python = python_in(root .. "/" .. name)
+    if python then return python end
   end
-  return nil
-end
-
-M.get_poetry_site_packages = function()
-  local result = vim.fn.system('poetry run python -c "import site; print(site.getsitepackages()[0])"')
-  if vim.v.shell_error == 0 then
-    return result:gsub('\n', '')
+  local active = python_in(vim.env.VIRTUAL_ENV) or python_in(vim.env.CONDA_PREFIX)
+  if active then return active end
+  if vim.fn.executable("poetry") == 1 then
+    local result = vim.system({ "poetry", "env", "info", "--executable" }, {
+      cwd = root, text = true,
+    }):wait()
+    if result.code == 0 then
+      local python = vim.trim(result.stdout or "")
+      if vim.fn.executable(python) == 1 then return python end
+    end
   end
-  return nil
-end
-
-M.get_poetry_executable = function()
-  local result = vim.fn.system('poetry env info --executable')
-  if vim.v.shell_error == 0 then
-    return result:gsub('\n', '')
+  for _, name in ipairs({ "python3", "python" }) do
+    local python = vim.fn.exepath(name)
+    if python ~= "" then return python end
   end
-  return nil
 end
 
 return M
