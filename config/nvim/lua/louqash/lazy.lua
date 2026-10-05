@@ -37,6 +37,7 @@ require("lazy").setup({
     build = ":TSUpdate",
   },
   'mbbill/undotree',
+  'tpope/vim-fugitive',
   {
     "chomosuke/typst-preview.nvim",
     ft = "typst",
