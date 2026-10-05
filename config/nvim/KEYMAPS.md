@@ -130,3 +130,38 @@ Mode column: `n` normal · `i` insert · `v` visual · `x` visual-block/charwise
 | `<C-w>h/j/k/l` | Move focus to window left/down/up/right |
 | `:qa` / `:qa!` | Quit all windows (force, discard changes) |
 | `:wqa` | Write all + quit all |
+
+## Python tooling
+
+Pyrefly provides navigation, completion, and type checking; Ruff provides linting
+and formatting. Mason installs both. The interpreter is selected from the project
+`.venv`, `venv`, `build/venv`, or `build/.venv`, then an activated virtualenv/Conda
+environment, Poetry, or Python on PATH. Restart Neovim after changing environments.
+
+## Building Kernel Engineering
+
+Use Neovim in the configured Coder/Linux workspace, with its virtual environment
+activated before launching the editor. The repository's `.devcontainer/README.md`
+describes first-time dependency installation and CMake configuration. That setup
+requires access to Graphcore's infrastructure. Do it once, not on every build.
+
+From the repository root, launch `nvim .`. In Neovim, use the built-in quickfix
+workflow for an existing `build/` directory:
+
+```vim
+:compiler gcc
+:setlocal makeprg=cmake\ --build\ build
+:wall
+:make --target aker -j 4
+:copen
+```
+
+Replace `aker` with the component or test target you are changing. `:cnext` and
+`:cprevious` jump through compiler errors. `:make` waits for the build; for a live
+terminal build use `:botright split | terminal cmake --build build --target aker -j 4`.
+Leave terminal input with Ctrl-\ Ctrl-N.
+
+The CMake configure step creates `compile_commands.json` and links it into the
+repository root for clangd. Generated headers may also require a targeted build.
+Keep Neovim and clangd in the same environment as the build; copying a Linux
+compilation database onto macOS does not provide its headers or dependencies.
