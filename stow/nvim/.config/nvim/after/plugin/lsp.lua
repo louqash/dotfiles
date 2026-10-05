@@ -1,7 +1,7 @@
 -- LSP setup using the native vim.lsp.config/vim.lsp.enable API (Neovim 0.11+).
 -- nvim-lspconfig is still installed for its per-server default configs (lsp/ dir);
 -- its old require('lspconfig') framework is deprecated and no longer used here.
--- mason-lspconfig v2 auto-enables every mason-installed server via vim.lsp.enable().
+-- mason-lspconfig v2 auto-enables the selected mason-installed servers via vim.lsp.enable().
 
 local cmp = require('cmp')
 local cmp_lsp = require('cmp_nvim_lsp')
@@ -43,10 +43,18 @@ vim.api.nvim_create_autocmd('LspAttach', {
       }, bufnr)
     end
 
+    if client.name == "ruff" then
+      client.server_capabilities.hoverProvider = false
+    elseif client.name == "pyrefly" then
+      -- Ruff owns Python formatting.
+      client.server_capabilities.documentFormattingProvider = false
+      client.server_capabilities.documentRangeFormattingProvider = false
+    end
+
     -- clangd-specific niceties for C/C++ development
     if client.name == "clangd" then
       -- jump between the .cpp/.h(pp) counterparts of the current file
-      vim.keymap.set("n", "<leader>ch", "<cmd>ClangdSwitchSourceHeader<cr>", opts)
+      vim.keymap.set("n", "<leader>ch", "<cmd>LspClangdSwitchSourceHeader<cr>", opts)
     end
   end,
 })
@@ -78,51 +86,31 @@ vim.lsp.config('clangd', {
   },
 })
 
-vim.lsp.config('pylsp', {
-  on_init = function(client)
-    local python_utils = require('louqash.python_util')
-    if python_utils.is_poetry_installed() then
-      local poetry_env = python_utils.get_poetry_project_path()
-      if poetry_env then
-        client.config.settings.pylsp.plugins.jedi.environment = poetry_env
-        local pylint_args = string.format("--init-hook='import sys; sys.path.append(\"%s\")'", python_utils.get_poetry_site_packages())
-        table.insert(client.config.settings.pylsp.plugins.pylint.args, pylint_args)
-        client.notify("workspace/didChangeConfiguration", { settings = client.config.settings })
-        return true
-      end
+vim.lsp.config('pyrefly', {
+  before_init = function(_, config)
+    local python = require('louqash.python_util').get_python_executable(config.root_dir)
+    if python then
+      config.init_options = vim.tbl_deep_extend('force', config.init_options or {}, {
+        pythonPath = python,
+      })
+      config.settings = vim.tbl_deep_extend('force', config.settings or {}, {
+        python = { pythonPath = python },
+      })
     end
   end,
-  settings = {
-    pylsp = {
-      plugins = {
-        pycodestyle = { enabled = false },
-        flake8 = { enabled = false, maxLineLength = 120 },
-        pyflakes = { enabled = false, maxLineLength = 120 },
-        ruff = { enabled = true },
-        mccabe = { enabled = false },
-        pylint = { enabled = false, args = {}},
-        jedi_signature_help = { enabled = true },
-        jedi_completion = {
-          include_params = true,
-          fuzzy = true,
-        },
-        jedi = {
-          extra_paths = {},
-        },
-      },
-    },
-  },
 })
+
+vim.lsp.config('ruff', {})
 
 require('mason').setup({})
 require('mason-lspconfig').setup({
-  ensure_installed = {},
+  -- Use the server's system clangd; Mason supplies the Python tools.
+  ensure_installed = { 'pyrefly', 'ruff' },
+  automatic_enable = { 'clangd', 'pyrefly', 'ruff' },
 })
 
--- mason-lspconfig enables mason-installed servers automatically; enable clangd
--- explicitly too so a system clangd on PATH works on machines without the
--- mason-managed one.
-vim.lsp.enable({ 'clangd', 'pylsp' })
+-- Also enable servers installed on PATH, including the system clangd.
+vim.lsp.enable({ 'clangd', 'pyrefly', 'ruff' })
 
 local cmp_select = {behavior = cmp.SelectBehavior.Select}
 

@@ -85,8 +85,11 @@ from the local clipboard. No display server or clipboard utility is required.
 See [the keymap reference](stow/nvim/.config/nvim/KEYMAPS.md).
 
 Forwarded `SSH_AUTH_SOCK`, negotiated `TERM`, and the server locale are preserved.
-Optional shell additions go in `~/.zshrc.local`. Python LSP uses a Poetry
-environment when Poetry is already available; setup does not install Poetry.
+Optional shell additions go in `~/.zshrc.local`. Neovim uses system clangd;
+Mason installs Pyrefly for Python navigation/type checking and Ruff for
+linting/formatting on first launch. Python environment detection supports
+project virtual environments (including `build/venv`), activated virtualenvs
+and Conda, and Poetry when available; setup does not install Poetry.
 
 ## Checks
 
