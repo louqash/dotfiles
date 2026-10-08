@@ -48,5 +48,11 @@ for script in "$DOTFILES_DIR/scripts/"*; do
 done
 
 if [[ "$OS" == "Darwin" ]]; then
-    link "$DOTFILES_DIR/config/karabiner" "$HOME/.config/karabiner"
+    python3 "$DOTFILES_DIR/install/karabiner.py" \
+        --source "$DOTFILES_DIR/config/karabiner" \
+        --target "$HOME/.config/karabiner"
+    service="gui/$(id -u)/org.pqrs.service.agent.Karabiner-Console-User-Server"
+    if launchctl print "$service" >/dev/null 2>&1; then
+        launchctl kickstart -k "$service"
+    fi
 fi

@@ -50,3 +50,8 @@ Edit `Brewfile` and run `brew bundle --file=Brewfile`.
 ## Re-running
 
 `./setup.sh` is idempotent — safe to run again after changes.
+
+Karabiner uses a real `~/.config/karabiner` directory, seeded from the repository,
+so switching branches cannot remove its active settings. The installer migrates
+old directory/file symlinks with a backup, preserves other settings, and sets
+Caps Lock to Escape across profiles. Karabiner GUI edits stay local.
