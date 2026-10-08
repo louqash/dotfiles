@@ -91,6 +91,11 @@ linting/formatting on first launch. Python environment detection supports
 project virtual environments (including `build/venv`), activated virtualenvs
 and Conda, and Poetry when available; setup does not install Poetry.
 
+The shell prompt shows the Git branch, `+` for staged changes, and `*` for
+unstaged changes to tracked files. Untracked files are not included. During a
+merge or rebase, the operation appears beside the branch. This uses Zsh's built-in
+`vcs_info` and requires no prompt plugin.
+
 ## Checks
 
 ```bash
