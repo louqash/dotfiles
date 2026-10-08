@@ -58,7 +58,16 @@ if (( $+commands[fzf] )); then
 fi
 
 # A built-in prompt needs no additional installation and identifies the host.
-PROMPT='%F{green}%n@%m%f %F{blue}%~%f %# '
+autoload -Uz vcs_info add-zsh-hook
+zstyle ':vcs_info:*' enable git
+zstyle ':vcs_info:git:*' check-for-changes true
+zstyle ':vcs_info:git:*' stagedstr '+'
+zstyle ':vcs_info:git:*' unstagedstr '*'
+zstyle ':vcs_info:git:*' formats ' %F{yellow}[%b%c%u]%f'
+zstyle ':vcs_info:git:*' actionformats ' %F{yellow}[%b|%a%c%u]%f'
+add-zsh-hook precmd vcs_info
+setopt PROMPT_SUBST
+PROMPT='%F{green}%n@%m%f %F{blue}%~%f${vcs_info_msg_0_} %# '
 (( ! $+commands[pyenv] )) || eval "$(pyenv init - zsh)"
 (( ! $+commands[direnv] )) || eval "$(direnv hook zsh)"
 
