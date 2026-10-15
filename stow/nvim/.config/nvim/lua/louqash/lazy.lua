@@ -39,6 +39,17 @@ require("lazy").setup({
   'mbbill/undotree',
   'tpope/vim-fugitive',
   'mtdl9/vim-log-highlighting',
+  {
+    "m00qek/baleia.nvim",
+    version = "*",
+    cmd = "BaleiaColorize",
+    config = function()
+      local baleia = require("baleia").setup({})
+      vim.api.nvim_create_user_command("BaleiaColorize", function()
+        baleia.once(vim.api.nvim_get_current_buf())
+      end, { desc = "Render ANSI colors in the current buffer" })
+    end,
+  },
   {'williamboman/mason.nvim'},
   {'williamboman/mason-lspconfig.nvim'},
   {'neovim/nvim-lspconfig', version = 'v2.*'},
