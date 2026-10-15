@@ -38,6 +38,7 @@ require("lazy").setup({
   },
   'mbbill/undotree',
   'tpope/vim-fugitive',
+  'mtdl9/vim-log-highlighting',
   {'williamboman/mason.nvim'},
   {'williamboman/mason-lspconfig.nvim'},
   {'neovim/nvim-lspconfig', version = 'v2.*'},
