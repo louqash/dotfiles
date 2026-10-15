@@ -42,6 +42,7 @@ require("lazy").setup({
   {
     "m00qek/baleia.nvim",
     version = "*",
+    submodules = false, -- Test dependencies are not needed to render ANSI colors.
     cmd = "BaleiaColorize",
     config = function()
       local baleia = require("baleia").setup({})
