@@ -1,4 +1,16 @@
-vim.api.nvim_exec ('language en_US', true)
+-- Keep messages in English without changing the encoding inherited by tools.
+vim.cmd("language messages C")
+if vim.fn.has("macunix") == 1 then
+    -- pbcopy/pbpaste interpret bytes using their locale, not Neovim's encoding.
+    local copy = { "/usr/bin/env", "LC_ALL=en_US.UTF-8", "/usr/bin/pbcopy" }
+    local paste = { "/usr/bin/env", "LC_ALL=en_US.UTF-8", "/usr/bin/pbpaste" }
+    vim.g.clipboard = {
+        name = "macOS UTF-8 clipboard",
+        copy = { ["+"] = copy, ["*"] = copy },
+        paste = { ["+"] = paste, ["*"] = paste },
+        cache_enabled = 0,
+    }
+end
 vim.opt.guicursor = ""
 
 vim.opt.number = true
@@ -34,6 +46,7 @@ vim.opt.colorcolumn = "80"
 vim.opt.foldmethod = "indent"
 
 vim.g.netrw_banner = 0 -- Hide banner
+vim.g.netrw_keepdir = 0 -- Keep the working directory in sync with netrw browsing
 vim.g.netrw_browse_split = 0 -- Open files in the same netrw window (replace it)
 vim.g.netrw_altv = 1 -- Open with right splitting
 vim.g.netrw_preview = 1 -- Use Vertical splits
