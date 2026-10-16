@@ -10,8 +10,17 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   })
 end
 vim.opt.rtp:prepend(lazypath)
+local farwork = vim.fn.expand("~/farwork.nvim")
 
 require("lazy").setup({
+  {
+    "louqash/farwork.nvim",
+    dir = vim.fn.isdirectory(farwork .. "/lua/farwork") == 1 and farwork or nil,
+    lazy = false,
+    config = function()
+      require("farwork").setup({ keymaps = true, auto_connect = true, auto_commit = true })
+    end,
+  },
   {
     "maxmx03/solarized.nvim",
     priority = 1000,
@@ -38,6 +47,7 @@ require("lazy").setup({
   },
   'mbbill/undotree',
   'tpope/vim-fugitive',
+  'mtdl9/vim-log-highlighting',
   {
     "chomosuke/typst-preview.nvim",
     ft = "typst",

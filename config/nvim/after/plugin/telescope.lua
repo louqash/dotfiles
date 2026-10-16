@@ -1,6 +1,10 @@
 local builtin = require('telescope.builtin')
 vim.keymap.set('n', '<leader>pf', builtin.find_files, {})
-vim.keymap.set('n', '<C-p>', builtin.git_files, {})
+vim.keymap.set('n', '<C-p>', function()
+    -- Include downloaded workspace files even when they are not tracked by Git.
+    if require('farwork').is_project() then builtin.find_files()
+    else builtin.git_files() end
+end, {})
 vim.keymap.set('n', '<leader>fg', builtin.live_grep, {})
 -- Grep for the current visual selection.
 vim.keymap.set('x', '<leader>ps', function()

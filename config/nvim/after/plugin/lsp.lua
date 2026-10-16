@@ -15,9 +15,11 @@ vim.api.nvim_create_autocmd('LspAttach', {
   callback = function(args)
     local client = assert(vim.lsp.get_client_by_id(args.data.client_id))
     local bufnr = args.buf
+    if client.name == "clangd" and require("farwork").owns_buffer(bufnr) then return end
     local opts = {buffer = bufnr, remap = false}
 
     vim.keymap.set("n", "gd", function() vim.lsp.buf.definition() end, opts)
+    vim.keymap.set("n", "gD", function() vim.lsp.buf.declaration() end, opts)
     vim.keymap.set("n", "K", function() vim.lsp.buf.hover() end, opts)
     vim.keymap.set("n", "<leader>vws", function() vim.lsp.buf.workspace_symbol() end, opts)
     vim.keymap.set("n", "<leader>vd", function() vim.diagnostic.open_float() end, opts)
@@ -31,9 +33,9 @@ vim.api.nvim_create_autocmd('LspAttach', {
 
     -- Auto-show a floating signature popup while typing inside "(...)" — shows the
     -- active parameter and lets you cycle overloads (e.g. all std::vector ctors)
-    -- with <C-j>. Attached per-buffer here so it hooks every LSP buffer reliably.
+    -- with <C-j>. These hooks survive LSP restarts, so attach only once per buffer.
     local ok_sig, lsp_signature = pcall(require, "lsp_signature")
-    if ok_sig then
+    if ok_sig and not vim.b[bufnr].louqash_signature_attached then
       lsp_signature.on_attach({
         bind = true,
         hint_enable = false,               -- no inline virtual-text hint; use the popup
@@ -41,6 +43,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
         handler_opts = { border = "rounded" },
         select_signature_key = "<C-j>",    -- cycle through overloads
       }, bufnr)
+      vim.b[bufnr].louqash_signature_attached = true
     end
 
     if client.name == "ruff" then
@@ -52,9 +55,14 @@ vim.api.nvim_create_autocmd('LspAttach', {
     end
 
     -- clangd-specific niceties for C/C++ development
-    if client.name == "clangd" then
+    if client.name == "clangd" or client.name == "remote_clangd" then
       -- jump between the .cpp/.h(pp) counterparts of the current file
-      vim.keymap.set("n", "<leader>ch", "<cmd>LspClangdSwitchSourceHeader<cr>", opts)
+      vim.keymap.set("n", "<leader>ch", function()
+        client:request("textDocument/switchSourceHeader", vim.lsp.util.make_text_document_params(), function(err, uri)
+          if err then vim.notify(err.message, vim.log.levels.ERROR)
+          elseif uri and uri ~= "" then vim.cmd.edit(vim.fn.fnameescape(vim.uri_to_fname(uri))) end
+        end, bufnr)
+      end, opts)
     end
   end,
 })
@@ -67,6 +75,9 @@ vim.lsp.config('*', {
 -- clangd (C/C++). clangd only speaks utf-8/utf-16; pin utf-16 to match
 -- Neovim/nvim-cmp and silence the "multiple offset_encodings" warning.
 vim.lsp.config('clangd', {
+  root_dir = function(bufnr, on_dir)
+    require('farwork').local_clangd_root(bufnr, on_dir)
+  end,
   capabilities = {
     offsetEncoding = { "utf-16" },
   },

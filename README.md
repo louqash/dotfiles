@@ -43,6 +43,22 @@ Create the desktops in Mission Control first. The script saves existing keyboard
 shortcuts under `~/.local/state/dotfiles/desktop-shortcuts.*` and preserves unrelated
 shortcuts. If macOS does not activate them immediately, log out and back in.
 
+## Remote development in Neovim
+
+[farwork.nvim](https://github.com/louqash/farwork.nvim) provides upload-on-save,
+remote clangd, CMake builds, checks, recovery, and remote diffs. Lazy installs it
+from GitHub; a checkout at `~/farwork.nvim` takes precedence for development.
+The plugin's source and tests live in that separate repository.
+Existing project files, saved destinations, and keymaps are preserved.
+Automatic connections and verified remote metadata fast-forward are enabled.
+Use `:RemoteStart` to connect manually and `:checkhealth farwork` to check tools.
+
+Run the dotfiles integration smoke test with a local plugin checkout present:
+
+```sh
+nvim --headless -n -u NONE -i NONE -l tests/test_plugin.lua
+```
+
 ## Adding/removing packages
 
 Edit `Brewfile` and run `brew bundle --file=Brewfile`.
