@@ -18,7 +18,7 @@ require("lazy").setup({
     dir = vim.fn.isdirectory(farwork .. "/lua/farwork") == 1 and farwork or nil,
     lazy = false,
     config = function()
-      require("farwork").setup({ keymaps = true, auto_connect = true, auto_commit = true })
+      require("farwork").setup({ keymaps = true, auto_connect = true, git = { auto_fast_forward = true } })
     end,
   },
   {
