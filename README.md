@@ -53,11 +53,6 @@ Existing project files, saved destinations, and keymaps are preserved.
 Automatic connections and verified remote metadata fast-forward are enabled.
 Use `:RemoteStart` to connect manually and `:checkhealth farwork` to check tools.
 
-Run the dotfiles integration smoke test with a local plugin checkout present:
-
-```sh
-nvim --headless -n -u NONE -i NONE -l tests/test_plugin.lua
-```
 
 ## Adding/removing packages
 

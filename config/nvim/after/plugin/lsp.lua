@@ -54,16 +54,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
       client.server_capabilities.documentRangeFormattingProvider = false
     end
 
-    -- clangd-specific niceties for C/C++ development
-    if client.name == "clangd" or client.name == "remote_clangd" then
-      -- jump between the .cpp/.h(pp) counterparts of the current file
-      vim.keymap.set("n", "<leader>ch", function()
-        client:request("textDocument/switchSourceHeader", vim.lsp.util.make_text_document_params(), function(err, uri)
-          if err then vim.notify(err.message, vim.log.levels.ERROR)
-          elseif uri and uri ~= "" then vim.cmd.edit(vim.fn.fnameescape(vim.uri_to_fname(uri))) end
-        end, bufnr)
-      end, opts)
-    end
+
   end,
 })
 
