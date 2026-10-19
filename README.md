@@ -51,7 +51,7 @@ from GitHub; a checkout at `~/farwork.nvim` takes precedence for development.
 The plugin's source and tests live in that separate repository.
 Existing project files, saved destinations, and keymaps are preserved.
 Automatic connections and verified remote metadata fast-forward are enabled.
-Use `:RemoteStart` to connect manually and `:checkhealth farwork` to check tools.
+Use `:FarworkStart` to connect manually and `:checkhealth farwork` to check tools.
 
 
 ## Adding/removing packages
