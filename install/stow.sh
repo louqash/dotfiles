@@ -21,7 +21,7 @@ command -v stow >/dev/null || { echo "Install GNU Stow first (sudo apt-get insta
 [[ -d "$TARGET_DIR" ]] || { echo "Target directory does not exist: $TARGET_DIR" >&2; exit 1; }
 TARGET_DIR="$(cd "$TARGET_DIR" && pwd -P)"
 
-PACKAGES=(zsh nvim tmux)
+PACKAGES=(zsh nvim tmux gdb)
 
 REMOVE_LINKS=()
 BACKUP_PATHS=()
