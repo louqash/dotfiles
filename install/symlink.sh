@@ -36,6 +36,7 @@ for obsolete in "$HOME/.config/wezterm" "$HOME/scripts/raycast_alacritty.sh"; do
 done
 
 link "$DOTFILES_DIR/config/zshrc"          "$HOME/.zshrc"
+link "$DOTFILES_DIR/config/gdbinit"        "$HOME/.gdbinit"
 link "$DOTFILES_DIR/config/nvim"           "$HOME/.config/nvim"
 if [[ "$OS" == "Darwin" ]]; then
     link "$DOTFILES_DIR/config/ghostty" "$HOME/.config/ghostty"
